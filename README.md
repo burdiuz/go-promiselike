@@ -1,7 +1,7 @@
 ### jspromise.Any
 Any type used as general type for values passed via channels.
 
-### jspromise.All(...<-chan *Any) <-chan []*Any
+### jspromise.All(input ...<-chan *Any) <-chan []*Any
 All works just like Promise.all() in Javascript and waits for all channels to return a value.
 After returning a list of values output channel is closed. All values passed through must be of type *Any.
 ```go
@@ -53,7 +53,7 @@ func main() {
 }
 ```
 
-### jspromise.Select(...<-chan *Any) <-chan *Any
+### jspromise.Select(input ...<-chan *Any) <-chan *Any
 Select checks for values from all channels at once until all of them are closed.
 ```go
 func main() {
@@ -105,7 +105,7 @@ func main() {
 }
 ```
 
-### jspromise.SelectUntil(<-chan int, ...<-chan *Any) <-chan *Any
+### jspromise.SelectUntil(done <-chan int, input ...<-chan *Any) <-chan *Any
 SelectUntil checks for values from all channels at once until all of them are closed or value passed into <-done channel that signals to stop recieving.
 ```go
 func main() {
@@ -166,7 +166,7 @@ func main() {
 }
 ```
 
-### jspromise.Race(...<-chan *Any) <-chan *Any
+### jspromise.Race(input ...<-chan *Any) <-chan *Any
 Race works just like Promise.race from JavaScript and returns a value returned first, then closes output channel.
 ```go
 func main() {
