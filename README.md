@@ -1,11 +1,10 @@
-package jspromise
+### jspromise.Any
+Any type used as general type for values passed via channels.
 
-//Any type used as general type for values passed via channels.
-type Any interface{}
-
-/*All works just like Promise.all() in Javascript and waits for all channels to return a value.
+### jspromise.All(...<-chan *Any) <-chan []*Any
+All works just like Promise.all() in Javascript and waits for all channels to return a value.
 After returning a list of values output channel is closed. All values passed through must be of type *Any.
-
+```go
 func main() {
 	values := <-All(
 		func() <-chan *Any {
@@ -52,46 +51,11 @@ func main() {
 
 	fmt.Println("Done", val1, val2, val3)
 }
-*/
-func All(inputs ...<-chan *Any) <-chan []*Any {
-	out := make(chan []*Any)
+```
 
-	go func() {
-		length := len(inputs)
-		var values []*Any = make([]*Any, length)
-		var filled []bool = make([]bool, length)
-
-		for {
-			hasEmpty := false
-
-			for index := 0; index < length; index++ {
-				if filled[index] {
-					continue
-				}
-
-				select {
-				case value := <-inputs[index]:
-					values[index] = value
-					filled[index] = true
-				default:
-					hasEmpty = true
-				}
-			}
-
-			if !hasEmpty {
-				break
-			}
-		}
-
-		out <- values
-		close(out)
-	}()
-
-	return out
-}
-
-/*Select checks for values from all channels at once until all of them are closed.
-
+### jspromise.Select(...<-chan *Any) <-chan *Any
+Select checks for values from all channels at once until all of them are closed.
+```go
 func main() {
 	chain := Select(
 		func() <-chan *Any {
@@ -139,48 +103,11 @@ func main() {
 
 	fmt.Println("Done.")
 }
-*/
-func Select(inputs ...<-chan *Any) <-chan *Any {
-	out := make(chan *Any)
+```
 
-	go func() {
-		length := len(inputs)
-		closed := make([]bool, length)
-
-		for {
-			hasOpen := false
-
-			for index := 0; index < length; index++ {
-				if closed[index] {
-					continue
-				}
-
-				select {
-				case value, ok := <-inputs[index]:
-					if ok {
-						out <- value
-						hasOpen = true
-					} else {
-						closed[index] = true
-					}
-				default:
-					// This default is important because it allows to skip channel if it is not ready
-					hasOpen = true
-				}
-			}
-
-			if !hasOpen {
-				close(out)
-				return
-			}
-		}
-	}()
-
-	return out
-}
-
-/*SelectUntil checks for values from all channels at once until all of them are closed or value passed into <-done channel that signals to stop recieving.
-
+### jspromise.SelectUntil(<-chan int, ...<-chan *Any) <-chan *Any
+SelectUntil checks for values from all channels at once until all of them are closed or value passed into <-done channel that signals to stop recieving.
+```go
 func main() {
 	done := make(chan int)
 
@@ -237,49 +164,11 @@ func main() {
 
 	fmt.Println("Done.")
 }
-*/
-func SelectUntil(done <-chan int, inputs ...<-chan *Any) <-chan *Any {
-	out := make(chan *Any)
+```
 
-	go func() {
-		length := len(inputs)
-		closed := make([]bool, length)
-
-		for {
-			hasOpen := false
-			for index := 0; index < length; index++ {
-				if closed[index] {
-					continue
-				}
-
-				select {
-				case value, ok := <-inputs[index]:
-					if ok {
-						out <- value
-						hasOpen = true
-					} else {
-						closed[index] = true
-					}
-				case <-done:
-					close(out)
-					return
-				default:
-					hasOpen = true
-				}
-			}
-
-			if !hasOpen {
-				close(out)
-				break
-			}
-		}
-	}()
-
-	return out
-}
-
-/*Race works just like Promise.race from JavaScript and returns a value returned first, then closes output channel.
-
+### jspromise.Race(...<-chan *Any) <-chan *Any
+Race works just like Promise.race from JavaScript and returns a value returned first, then closes output channel.
+```go
 func main() {
 	value := *<-Race(
 		func() <-chan *Any {
@@ -321,24 +210,4 @@ func main() {
 
 	fmt.Println("Done", value)
 }
-*/
-func Race(inputs ...<-chan *Any) <-chan *Any {
-	out := make(chan *Any)
-
-	go func() {
-		length := len(inputs)
-		for {
-			for index := 0; index < length; index++ {
-				select {
-				case value := <-inputs[index]:
-					out <- value
-					close(out)
-					return
-				default:
-				}
-			}
-		}
-	}()
-
-	return out
-}
+```
